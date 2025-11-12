@@ -3,15 +3,15 @@ import numpy as np
 def basicGVD(dispParameter,centFrequency,stepsize):
     #evaluates value of freq-domain GVD operator
     #first get value of the basic GVD operator - basic NLSE
-    exponent = 2*(np.pi**2)*(dispParameter/2)*(centFrequency**2)*(stepsize/2)
+    exponent = 2*(np.pi**2)*(dispParameter)*(centFrequency**2)*(stepsize/2)
     exponent = 0 + (exponent*1j)
     return np.exp(exponent)
 
-def resolveBasicGVD(dispParameter,stepsize,pulseShape):
+def resolveBasicGVD(dispParameter,stepsize,pulseShape,samplingRate = 1):
     #applies gvd operator in frequency domain and reverses product fourier transform to return to time domain
     pulseShapeFT = np.fft.fft(pulseShape)
     #get frequency space
-    frequencies = np.fft.fftfreq(len(pulseShape))
+    frequencies = np.fft.fftfreq(len(pulseShape),1/samplingRate)
     for i,frequency in enumerate(frequencies):
         #multiply each frequency element
         pulseShapeFT[i] = np.multiply(pulseShapeFT[i],basicGVD(dispParameter,frequency,stepsize))
