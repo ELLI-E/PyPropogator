@@ -27,7 +27,7 @@ def BasicRKNL(gamma,pulse,stepsize):
 def BasicRK4IP(pulse,b2,gamma,stepSize,samplingRate):
     #get k1-k4 parts
     PulseIP = resolveBasicGVD(b2,stepSize,pulse,samplingRate)
-    k1 = resolveBasicGVD(b2,stepSize,np.multiply(pulse,BasicRKNL(gamma,pulse,stepSize)))
+    k1 = resolveBasicGVD(b2,stepSize,np.multiply(pulse,BasicRKNL(gamma,pulse,stepSize)),samplingRate)
     k2 = np.multiply(BasicRKNL(gamma,np.add(PulseIP,np.divide(k1,2)),stepSize),np.add(PulseIP,np.divide(k1,2)))
     k3 = np.multiply(BasicRKNL(gamma,np.add(PulseIP,np.divide(k2,2)),stepSize),np.add(PulseIP,np.divide(k2,2)))
     k4 = np.multiply(BasicRKNL(gamma,resolveBasicGVD(b2,stepSize,np.add(PulseIP,k3),samplingRate),stepSize),resolveBasicGVD(b2,stepSize,np.add(PulseIP,k3),samplingRate))
