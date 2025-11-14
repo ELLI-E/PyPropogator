@@ -21,3 +21,5 @@ def SymSplitStepNL(gamma,pulse,stepsize):
     exponent = gamma*np.square(np.abs(pulse))*stepsize
     exponent = 0 + exponent*1j
     return np.exp(exponent)
+def BasicRKNL(gamma,pulse,stepsize):
+    return gamma*np.square(np.abs(pulse))*stepsize*(1j)
