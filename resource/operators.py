@@ -1,4 +1,5 @@
 import numpy as np
+from math import factorial
 
 def basicGVD(dispParameter,centFrequency,stepsize):
     #evaluates value of freq-domain GVD operator
@@ -17,10 +18,20 @@ def resolveBasicGVD(dispParameter,stepsize,pulseShape,samplingRate = 1):
         pulseShapeFT[i] = np.multiply(pulseShapeFT[i],basicGVD(dispParameter,frequency,stepsize))
         #print(basicGVD(dispParameter,frequency,stepsize))
     return np.fft.ifft(pulseShapeFT)
+
+def GeneralGVD(dispList,frequency,attenuation,stepsize):
+    #sum over higher order frequency dispersion parameters
+    summed = 0
+    for i,dispersion in enumerate(dispList):
+        summed += (dispersion/factorial(i+2))*((2*np.pi*frequency)**2)
+    exponent = (-attenuation/2) + (summed*1j)
+    return np.exp(exponent)
+
 def SymSplitStepNL(gamma,pulse,stepsize):
     exponent = gamma*np.square(np.abs(pulse))*stepsize
     exponent = 0 + exponent*1j
     return np.exp(exponent)
+
 def BasicRKNL(gamma,pulse,stepsize):
     return gamma*np.square(np.abs(pulse))*stepsize*(1j)
 
@@ -38,3 +49,4 @@ def BasicRK4IP(pulse,b2,gamma,stepSize,samplingRate):
     #final step
     step = np.add(np.divide(k4,6),resolveBasicGVD(b2,stepSize,s3,samplingRate))
     return step
+
