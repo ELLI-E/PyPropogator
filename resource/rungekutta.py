@@ -9,9 +9,9 @@ def BasicRK4IP(pulse,b2,gamma,stepSize,samplingRate):
     k3 = np.multiply(op.BasicRKNL(gamma,np.add(PulseIP,np.divide(k2,2)),stepSize),np.add(PulseIP,np.divide(k2,2)))
     k4 = np.multiply(op.BasicRKNL(gamma,op.resolveBasicGVD(b2,stepSize,np.add(PulseIP,k3),samplingRate),stepSize),op.resolveBasicGVD(b2,stepSize,np.add(PulseIP,k3),samplingRate))
     #sum parts together
-    S1 = np.add(PulseIP,np.divide(k1,6))
-    S2 = np.add(S1,np.divide(k2,3))
-    S3 = np.add(S2,np.divide(k3,3))
+    s1 = np.add(PulseIP,np.divide(k1,6))
+    s2 = np.add(s1,np.divide(k2,3))
+    s3 = np.add(s2,np.divide(k3,3))
     #final step
-    step = np.add(np.divide(k4,6),op.resolveBasicGVD(b2,stepSize,S3,samplingRate))
+    step = np.add(np.divide(k4,6),op.resolveBasicGVD(b2,stepSize,s3,samplingRate))
     return step
