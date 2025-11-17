@@ -1,6 +1,6 @@
 import numpy as np
 from math import factorial
-
+from copy import deepcopy
 def basicGVD(dispParameter,centFrequency,stepsize):
     #evaluates value of freq-domain GVD operator
     #first get value of the basic GVD operator - basic NLSE
@@ -50,3 +50,17 @@ def BasicRK4IP(pulse,b2,gamma,stepSize,samplingRate):
     step = np.add(np.divide(k4,6),resolveBasicGVD(b2,stepSize,s3,samplingRate))
     return step
 
+def RamanResponseIntegral(ramanresponse,pulseIn):
+    """
+    ramanfunction - values of raman function with the same spacing between points in time as pulse
+    pulse - shape of pulse - NOTE requires plenty of temporal space for the pulse to be "shifted" while performing the integral, at least a picosecond
+    """
+    #for safety make pulse a deepcopy of pulseIn
+    pulse = deepcopy(pulseIn)
+    ramanPulse = np.zeros(len(pulse))
+    for i,raman in enumerate(ramanresponse):
+        ramanPulse = np.add(ramanPulse,np.multiply(raman,np.square(pulse)))
+        pulse = np.roll(pulse,1) #shift pulse by 1 femtosecond
+        pulse[0] #to prevent looping in array, make the leftmost value 0
+    return ramanPulse
+        
