@@ -25,7 +25,7 @@ def GeneralGVD(dispList,frequency,attenuation,stepsize):
     for i,dispersion in enumerate(dispList):
         summed += (dispersion/factorial(i+2))*((2*np.pi*frequency)**2)
     exponent = (-attenuation/2) + (summed*1j)
-    return np.exp(exponent)
+    return np.exp(np.multiply(exponent,stepsize/2))
 
 def SymSplitStepNL(gamma,pulse,stepsize):
     exponent = gamma*np.square(np.abs(pulse))*stepsize
