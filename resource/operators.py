@@ -55,12 +55,30 @@ def RamanResponseIntegral(ramanresponse,pulseIn):
     ramanfunction - values of raman function with the same spacing between points in time as pulse
     pulse - shape of pulse - NOTE requires plenty of temporal space for the pulse to be "shifted" while performing the integral, at least a picosecond
     """
+    #this whole function can probably be made redundant through a Fourier Transform - will look into the specifics at a later date
     #for safety make pulse a deepcopy of pulseIn
     pulse = deepcopy(pulseIn)
     ramanPulse = np.zeros(len(pulse))
     for i,raman in enumerate(ramanresponse):
         ramanPulse = np.add(ramanPulse,np.multiply(raman,np.square(pulse)))
-        pulse = np.roll(pulse,1) #shift pulse by 1 femtosecond
+        pulse = np.roll(pulse,1) #shift pulse by 1 time space
         pulse[0] #to prevent looping in array, make the leftmost value 0
     return ramanPulse
-        
+
+def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=1):
+    #will use similar method to ResolveBasicGVD to eliminate differential part
+    #first resolve RHS part 
+    rhs1 = np.multiply(pulseIn,np.square(np.abs(pulseIn)))
+    rhs1 = np.multiply(rhs1,(1-ramanFraction))
+    rhs2 = np.multiply(np.multiply(pulseIn,ramanFraction),RamanResponseIntegral(ramanCurve,pulseIn))
+    rhs = np.add(rhs1,rhs2)
+    rhsfft = np.fft.fft(rhs)
+    fftfrequency = np.fft.fftfreq(len(pulseIn),samplingRate)
+    for i,frequency in enumerate(fftfrequency):
+        rhsfft[i] = np.multiply(rhsfft[i],2*np.pi*frequency)
+    lhs1 = np.fft.ifft(rhsfft)
+    lhs1 = np.multiply(lhs1,np.divide(1j,np.multiply(pulseIn,centFrequency)))
+    lhs2 = np.divide(rhs,pulseIn)
+    lhs = np.add(lhs1,lhs2)
+    lhs = np.multiply(1j * gamma,lhs)
+    return lhs
