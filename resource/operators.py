@@ -4,10 +4,12 @@ from copy import deepcopy
 
 """
 This file contains operators and the functions used to resolve them. This includes the symmetric split step and
-Runge-Kutta step functions that are called in a loop to iterate over an input pulse.
+Runge-Kutta step functions that are called in a loop to iterate over an input pulse. All operations on numpy arrays
+use numpy operators, i.e. np.add rather than + to avoid errors and ambiguity
 """
 
 def basicGVD(dispParameter,centFrequency,stepsize):
+    #OBSOLETE - left in file for reference only
     #evaluates value of freq-domain GVD operator
     #first get value of the basic GVD operator - basic NLSE
     exponent = 2*(np.pi**2)*(dispParameter)*(centFrequency**2)*(stepsize/2)
@@ -23,6 +25,7 @@ def GeneralGVD(dispList,frequency,attenuation,stepsize):
     return np.exp(np.multiply(exponent,stepsize/2))
 
 def SymSplitStepNL(gamma,pulse,stepsize):
+    #OBSOLETE - left in file for reference only
     exponent = gamma*np.square(np.abs(pulse))*stepsize
     exponent = 0 + exponent*1j
     return np.exp(exponent)
@@ -49,6 +52,7 @@ def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=
     return lhs
 
 def resolveBasicGVD(dispParameter,stepsize,pulseShape,samplingRate = 1):
+    #OBSOLETE - left in file for reference only
     #applies gvd operator in frequency domain and reverses product fourier transform to return to time domain
     pulseShapeFT = np.fft.fft(pulseShape)
     #get frequency space
@@ -82,6 +86,7 @@ def RamanResponseIntegral(ramanresponse,pulseIn):
     return ramanPulse
 
 def BasicRK4IP(pulse,b2,gamma,stepSize,samplingRate):
+    #OBSOLETE - left in file for reference only
     #get k1-k4 parts
     PulseIP = resolveBasicGVD(b2,stepSize,pulse,samplingRate)
     k1 = resolveBasicGVD(b2,stepSize,np.multiply(pulse,BasicRKNL(gamma,pulse,stepSize)),samplingRate)
@@ -110,3 +115,11 @@ def GeneralGVDRK4IP(dispList,attenuation,gamma,stepSize,samplingRate,pulseIn):
     #final step
     step = np.add(np.divide(k4,6),ResolveGeneralGVD(dispList,attenuation,stepSize,s3,samplingRate))
     return step
+
+def GNLSERK4IP(dispList,attenuation,gamma,ramanCurve,ramanFraction,centFrequency,stepSize,samplingRate,pulseIn):
+    PulseIP = ResolveGeneralGVD(dispList,attenuation,stepSize,pulseIn,samplingRate)
+    k1 = ResolveGeneralGVD(dispList,attenuation,stepSize,np.multiply(pulseIn,np.multiply(stepSize,GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate))),samplingRate)
+    k2 = np.multiply(GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,np.add(PulseIP,np.divide(k1,2)),samplingRate),np.add(PulseIP,np.divide(k1,2)))
+    k2 = np.multiply(k2,stepSize)
+    k3 = np.multiply(GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,np.add(PulseIP,np.divide(k2,2)),samplingRate),np.add(PulseIP,np.divide(k2,2)))
+    k3 = np.multiply(k3,stepSize)
