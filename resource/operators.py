@@ -1,6 +1,12 @@
 import numpy as np
 from math import factorial
 from copy import deepcopy
+
+"""
+This file contains operators and the functions used to resolve them. This includes the symmetric split step and
+Runge-Kutta step functions that are called in a loop to iterate over an input pulse.
+"""
+
 def basicGVD(dispParameter,centFrequency,stepsize):
     #evaluates value of freq-domain GVD operator
     #first get value of the basic GVD operator - basic NLSE
