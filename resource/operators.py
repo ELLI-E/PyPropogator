@@ -12,8 +12,8 @@ def GeneralGVD(dispList,frequency,attenuation,stepsize):
     #sum over higher order frequency dispersion parameters
     summed = 0
     for i,dispersion in enumerate(dispList):
-        summed += (dispersion/factorial(i+2))*((2*np.pi*frequency)**2)
-    exponent = (-attenuation/2) + (summed*1j)
+        summed += (dispersion/factorial(i+2))*((2*np.pi*frequency)**(i+2))*(1j**((2*(i+2))-1))
+    exponent = (-attenuation/2) - (summed)
     return np.exp(np.multiply(exponent,stepsize/2))
 
 def SymSplitStepNL(gamma,pulse,stepsize):
@@ -102,5 +102,5 @@ def GeneralGVDRK4IP(dispList,attenuation,gamma,stepSize,samplingRate,pulseIn):
     s2 = np.add(s1,np.divide(k2,3))
     s3 = np.add(s2,np.divide(k3,3))
     #final step
-    step = np.add(np.divide(k4,6),resolveBasicGVD(dispList,stepSize,s3,samplingRate))
+    step = np.add(np.divide(k4,6),ResolveGeneralGVD(dispList,attenuation,stepSize,s3,samplingRate))
     return step
