@@ -36,6 +36,8 @@ def BasicRKNL(gamma,pulse,stepsize):
 def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=1):
     #will use similar method to ResolveBasicGVD to eliminate differential part
     #first resolve RHS part 
+    #centfrequency - use central angular frequency if pulse intensity is NOT normalised - i.e. A(z,t) = sqrt(P_0)e^(-alpha z/2)U(z,t)
+    #if using U(z,t), instead take centFrequency to be 1/s, or central angular frequency multiplied by the pulse duration, T0
     rhs1 = np.multiply(pulseIn,np.square(np.abs(pulseIn)))
     rhs1 = np.multiply(rhs1,(1-ramanFraction))
     rhs2 = np.multiply(np.multiply(pulseIn,ramanFraction),RamanResponseIntegral(ramanCurve,pulseIn))
@@ -82,7 +84,7 @@ def RamanResponseIntegral(ramanresponse,pulseIn):
     for i,raman in enumerate(ramanresponse):
         ramanPulse = np.add(ramanPulse,np.multiply(raman,np.square(pulse)))
         pulse = np.roll(pulse,1) #shift pulse by 1 time space
-        pulse[0] #to prevent looping in array, make the leftmost value 0
+        pulse[0] = 0 #to prevent looping in array, make the leftmost value 0
     return ramanPulse
 
 def BasicRK4IP(pulse,b2,gamma,stepSize,samplingRate):
@@ -123,3 +125,12 @@ def GNLSERK4IP(dispList,attenuation,gamma,ramanCurve,ramanFraction,centFrequency
     k2 = np.multiply(k2,stepSize)
     k3 = np.multiply(GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,np.add(PulseIP,np.divide(k2,2)),samplingRate),np.add(PulseIP,np.divide(k2,2)))
     k3 = np.multiply(k3,stepSize)
+    k4 = np.multiply(GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,ResolveGeneralGVD(dispList,attenuation,stepSize,np.add(PulseIP,k3),samplingRate),samplingRate),ResolveGeneralGVD(dispList,attenuation,stepSize,np.add(PulseIP,k3),samplingRate))
+    k4 = np.multiply(k4,stepSize)
+    #sum parts together
+    s1 = np.add(PulseIP,np.divide(k1,6))
+    s2 = np.add(s1,np.divide(k2,3))
+    s3 = np.add(s2,np.divide(k3,3))
+    #final step
+    step = np.add(np.divide(k4,6),ResolveGeneralGVD(dispList,attenuation,stepSize,s3,samplingRate))
+    return step
