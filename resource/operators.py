@@ -7,7 +7,14 @@ This file contains operators and the functions used to resolve them. This includ
 Runge-Kutta step functions that are called in a loop to iterate over an input pulse. All operations on numpy arrays
 use numpy operators, i.e. np.add rather than + to avoid errors and ambiguity
 """
-
+def round(min,input):
+    #attempting to avoid overflow errors with very small values - i.e. 1e-255 appearing 
+    array = deepcopy(input)
+    for i,element in enumerate(array):
+        if np.abs(element) <= min:
+            array[i] = 0
+    return array
+        
 def basicGVD(dispParameter,centFrequency,stepsize):
     #OBSOLETE - left in file for reference only
     #evaluates value of freq-domain GVD operator
