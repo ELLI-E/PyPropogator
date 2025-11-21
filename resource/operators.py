@@ -61,6 +61,7 @@ def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=
     #before dividing anything, round
     pulseIn = round(1e-6,pulseIn)
     for i,inputPulseValue in enumerate(pulseIn):
+        #skip over elements of value 0
         if inputPulseValue != 0:
             lhs1[i] = np.divide(lhs1[i],inputPulseValue)
             lhs2[i] = np.divide(rhs[i],inputPulseValue)

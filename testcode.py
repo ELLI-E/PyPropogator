@@ -10,7 +10,7 @@ from copy import deepcopy
 b2 = 0.001e6 #in fs^2m^-1
 stepsize = 0.05 #in meters
 gamma = 1.6
-steps = 100 #z steps - s.t. total length = steps * stepsize in meters
+steps = 200 #z steps - s.t. total length = steps * stepsize in meters
 timeNum = 2000 #number of time samples
 t1 = -2000 #start time in fs
 t2 = 2000 #end time in fs
