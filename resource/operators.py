@@ -54,8 +54,18 @@ def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=
     for i,frequency in enumerate(fftfrequency):
         rhsfft[i] = np.multiply(rhsfft[i],2*np.pi*frequency)
     lhs1 = np.fft.ifft(rhsfft)
-    lhs1 = np.multiply(lhs1,np.divide(1j,np.multiply(pulseIn,centFrequency)))
-    lhs2 = np.divide(rhs,pulseIn)
+    #need to make sure that we only divide by values that are not zero
+    lhs1 = np.multiply(lhs1,np.divide(1j,centFrequency))
+    #we ignore elements where pulseIn is zero - we have to divide the others to avoid overflow but zero elements will be multiplied by zero later
+    lhs2 = np.multiply(rhs,1)
+    #before dividing anything, round
+    pulseIn = round(1e-6,pulseIn)
+    for i,inputPulseValue in enumerate(pulseIn):
+        #skip over elements of value 0
+        if inputPulseValue != 0:
+            lhs1[i] = np.divide(lhs1[i],inputPulseValue)
+            lhs2[i] = np.divide(rhs[i],inputPulseValue)
+
     lhs = np.add(lhs1,lhs2)
     lhs = np.multiply(1j * gamma,lhs)
     return lhs
