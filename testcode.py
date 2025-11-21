@@ -12,8 +12,8 @@ stepsize = 0.05 #in meters
 gamma = 1.6
 steps = 100 #z steps - s.t. total length = steps * stepsize in meters
 timeNum = 2000 #number of time samples
-t1 = -1000 #start time in fs
-t2 = 1000 #end time in fs
+t1 = -2000 #start time in fs
+t2 = 2000 #end time in fs
 samplingRate = timeNum/(t2-t1) #samples per femtosecond
 t = np.linspace(t1,t2,timeNum)
 gaussPulseInitial = pulse.GaussianPulse(t,50) #50fs pulse
