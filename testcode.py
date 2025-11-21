@@ -51,9 +51,12 @@ ramanFraction = 0.18
 centFrequency = 100 #pulse is normalised so instead define centFrequency as central angular frequency multiplied by duration of pulse - if pulse is NOT normalised use the real angular frequency
 ramanCurve = rf.BlowWoodResponse(1000,1000,12.2,32)[1]
 #to visualize in 2d, save pulse at each z
+
 gaussPulse = op.GNLSERK4IP(dispersionList,attenuation,gamma,ramanCurve,ramanFraction,centFrequency,stepsize,samplingRate,gaussPulseInitial)
+gaussPulse = op.round(1e-6,gaussPulse) #rounding to avoid "underflow"
 for i in range(steps-1):
     gaussPulse = op.GNLSERK4IP(dispersionList,attenuation,gamma,ramanCurve,ramanFraction,centFrequency,stepsize,samplingRate,gaussPulse)
+    gaussPulse = op.round(1e-6,gaussPulse)
 
 initialFT = np.fft.fft(gaussPulseInitial)
 propFT = np.fft.fft(gaussPulse)
