@@ -41,6 +41,7 @@ def BasicRKNL(gamma,pulse,stepsize):
     return gamma*np.square(np.abs(pulse))*stepsize*(1j)
 
 def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=1):
+    pulseIn = round(1e-6,pulseIn)
     #will use similar method to ResolveBasicGVD to eliminate differential part
     #first resolve RHS part 
     #centfrequency - use central angular frequency if pulse intensity is NOT normalised - i.e. A(z,t) = sqrt(P_0)e^(-alpha z/2)U(z,t)
@@ -50,12 +51,12 @@ def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=
     rhs2 = np.multiply(np.multiply(pulseIn,ramanFraction),RamanResponseConvolution(ramanCurve,np.square(pulseIn)))
     rhs = np.add(rhs1,rhs2)
     rhsfft = np.fft.fft(rhs)
-    fftfrequency = np.fft.fftfreq(len(pulseIn),samplingRate)
+    fftfrequency = np.fft.fftfreq(len(pulseIn),1/samplingRate)
     for i,frequency in enumerate(fftfrequency):
         rhsfft[i] = np.multiply(rhsfft[i],2j*np.pi*frequency)
     lhs1 = np.fft.ifft(rhsfft)
     #need to make sure that we only divide by values that are not zero
-    lhs1 = np.multiply(lhs1,np.divide(1,centFrequency))
+    lhs1 = np.multiply(lhs1,np.divide(1j,centFrequency))
     #we ignore elements where pulseIn is zero - we have to divide the others to avoid overflow but zero elements will be multiplied by zero later
     lhs2 = np.multiply(rhs,1)
     #before dividing anything, round
@@ -83,6 +84,7 @@ def resolveBasicGVD(dispParameter,stepsize,pulseShape,samplingRate = 1):
     return np.fft.ifft(pulseShapeFT)
 
 def ResolveGeneralGVD(dispList,attenuation,stepSize,pulseShape,samplingRate):
+    pulseShape = round(1e-6,pulseShape)
     pulseShapeFT = np.fft.fft(pulseShape)
     frequencies = np.fft.fftfreq(len(pulseShape),1/samplingRate)
     for i,frequency in enumerate(frequencies):
@@ -142,12 +144,43 @@ def GeneralGVDRK4IP(dispList,attenuation,gamma,stepSize,samplingRate,pulseIn):
 
 def GNLSERK4IP(dispList,attenuation,gamma,ramanCurve,ramanFraction,centFrequency,stepSize,samplingRate,pulseIn):
     PulseIP = ResolveGeneralGVD(dispList,attenuation,stepSize,pulseIn,samplingRate)
-    k1 = ResolveGeneralGVD(dispList,attenuation,stepSize,np.multiply(pulseIn,np.multiply(stepSize,GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate))),samplingRate)
+    k1 = ResolveGeneralGVD(dispList,attenuation,stepSize,np.multiply(pulseIn,GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate)),samplingRate)
+    k1 = np.multiply(k1,stepSize)
     k2 = np.multiply(GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,np.add(PulseIP,np.divide(k1,2)),samplingRate),np.add(PulseIP,np.divide(k1,2)))
     k2 = np.multiply(k2,stepSize)
     k3 = np.multiply(GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,np.add(PulseIP,np.divide(k2,2)),samplingRate),np.add(PulseIP,np.divide(k2,2)))
     k3 = np.multiply(k3,stepSize)
     k4 = np.multiply(GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,ResolveGeneralGVD(dispList,attenuation,stepSize,np.add(PulseIP,k3),samplingRate),samplingRate),ResolveGeneralGVD(dispList,attenuation,stepSize,np.add(PulseIP,k3),samplingRate))
+    k4 = np.multiply(k4,stepSize)
+    #sum parts together
+    s1 = np.add(PulseIP,np.divide(k1,6))
+    s2 = np.add(s1,np.divide(k2,3))
+    s3 = np.add(s2,np.divide(k3,3))
+    #final step
+    step = np.add(np.divide(k4,6),ResolveGeneralGVD(dispList,attenuation,stepSize,s3,samplingRate))
+    return step
+
+def EnergyNormalisation(initial,new):
+    ratio = np.sum(np.abs(new))/np.sum(np.abs(initial))
+    new = np.divide(new,ratio)
+
+def SelfSteepenNL(gamma,ramanCurve,ramanFraction,w0,pulseIn,samplingRate=1):
+    pulseIn = round(1e-6,pulseIn)
+    lhs = np.fft.fft(np.multiply(pulseIn,np.multiply(pulseIn,np.conjugate(pulseIn))))
+    rhs2 = np.convolve(np.multiply(2j*np.pi,np.fft.fftfreq(len(pulseIn),1/samplingRate)),np.fft.fft(np.multiply(pulseIn,np.multiply(pulseIn,np.conjugate(pulseIn)))),mode="same")
+    rhs = np.convolve(rhs1,rhs2,"same")
+    rhs = np.multiply(1j/w0,rhs)
+    return 1j*gamma*np.add(lhs,rhs)
+
+def SelfSteepRK4IP(dispList,attenuation,gamma,ramanCurve,ramanFraction,centFrequency,stepSize,samplingRate,pulseIn):
+    PulseIP = ResolveGeneralGVD(dispList,attenuation,stepSize,pulseIn,samplingRate)
+    k1 = ResolveGeneralGVD(dispList,attenuation,stepSize,np.multiply(pulseIn,SelfSteepenNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate)),samplingRate)
+    k1 = np.multiply(k1,stepSize)
+    k2 = np.multiply(SelfSteepenNL(gamma,ramanCurve,ramanFraction,centFrequency,np.add(PulseIP,np.divide(k1,2)),samplingRate),np.add(PulseIP,np.divide(k1,2)))
+    k2 = np.multiply(k2,stepSize)
+    k3 = np.multiply(SelfSteepenNL(gamma,ramanCurve,ramanFraction,centFrequency,np.add(PulseIP,np.divide(k2,2)),samplingRate),np.add(PulseIP,np.divide(k2,2)))
+    k3 = np.multiply(k3,stepSize)
+    k4 = np.multiply(SelfSteepenNL(gamma,ramanCurve,ramanFraction,centFrequency,ResolveGeneralGVD(dispList,attenuation,stepSize,np.add(PulseIP,k3),samplingRate),samplingRate),ResolveGeneralGVD(dispList,attenuation,stepSize,np.add(PulseIP,k3),samplingRate))
     k4 = np.multiply(k4,stepSize)
     #sum parts together
     s1 = np.add(PulseIP,np.divide(k1,6))
