@@ -45,17 +45,17 @@ def GeneralNL(gamma,ramanCurve,ramanFraction,centFrequency,pulseIn,samplingRate=
     #first resolve RHS part 
     #centfrequency - use central angular frequency if pulse intensity is NOT normalised - i.e. A(z,t) = sqrt(P_0)e^(-alpha z/2)U(z,t)
     #if using U(z,t), instead take centFrequency to be 1/s, or central angular frequency multiplied by the pulse duration, T0
-    rhs1 = np.multiply(pulseIn,np.square(np.abs(pulseIn)))
+    rhs1 = np.multiply(pulseIn,np.multiply(pulseIn,np.conjugate(pulseIn)))
     rhs1 = np.multiply(rhs1,(1-ramanFraction))
-    rhs2 = np.multiply(np.multiply(pulseIn,ramanFraction),RamanResponseIntegral(ramanCurve,pulseIn))
+    rhs2 = np.multiply(np.multiply(pulseIn,ramanFraction),RamanResponseConvolution(ramanCurve,np.square(pulseIn)))
     rhs = np.add(rhs1,rhs2)
     rhsfft = np.fft.fft(rhs)
     fftfrequency = np.fft.fftfreq(len(pulseIn),samplingRate)
     for i,frequency in enumerate(fftfrequency):
-        rhsfft[i] = np.multiply(rhsfft[i],2*np.pi*frequency)
+        rhsfft[i] = np.multiply(rhsfft[i],2j*np.pi*frequency)
     lhs1 = np.fft.ifft(rhsfft)
     #need to make sure that we only divide by values that are not zero
-    lhs1 = np.multiply(lhs1,np.divide(1j,centFrequency))
+    lhs1 = np.multiply(lhs1,np.divide(1,centFrequency))
     #we ignore elements where pulseIn is zero - we have to divide the others to avoid overflow but zero elements will be multiplied by zero later
     lhs2 = np.multiply(rhs,1)
     #before dividing anything, round
@@ -103,7 +103,12 @@ def RamanResponseIntegral(ramanresponse,pulseIn):
         pulse = np.roll(pulse,1) #shift pulse by 1 time space
         pulse[0] = 0 #to prevent looping in array, make the leftmost value 0
     return ramanPulse
-
+def RamanResponseConvolution(ramanresponse,pulseIn):
+    ramanpulse = np.convolve(pulseIn,ramanresponse,"same")
+    #compensate for spurious gains
+    ratio = np.sum(np.abs(ramanpulse))/np.sum(np.abs(pulseIn))
+    ramanpulse = np.divide(ramanpulse,ratio)
+    return ramanpulse
 def BasicRK4IP(pulse,b2,gamma,stepSize,samplingRate):
     #OBSOLETE - left in file for reference only
     #get k1-k4 parts
